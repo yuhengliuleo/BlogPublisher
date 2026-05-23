@@ -357,11 +357,11 @@ function formatDate(dateStr) {
   return date.toLocaleDateString('zh-CN')
 }
 
-function showStatus(message, type = 'info') {
+function showStatus(message, type = 'info', duration = 3000) {
   status.value = { message, type }
   setTimeout(() => {
     status.value = { message: '', type: '' }
-  }, 3000)
+  }, duration)
 }
 
 // 加载配置
@@ -528,7 +528,8 @@ async function publishArticle() {
       return
     }
     
-    showStatus('发布成功！', 'success')
+    // 发布成功，显示更长时间的成功提示
+    showStatus('🎉 发布成功！文章已推送到 GitHub', 'success', 5000)
     resetForm()
     
   } catch (error) {
