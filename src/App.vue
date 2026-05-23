@@ -411,16 +411,28 @@ async function saveSettings() {
   
   savingSettings.value = true
   
-  const result = await window.electronAPI.saveConfig(settingsForm.value)
-  if (result.success) {
-    config.value = { ...settingsForm.value }
-    showStatus('设置已保存', 'success')
-    await loadCategories()
-  } else {
-    showStatus('保存失败', 'error')
+  try {
+    // 将 Vue 响应式对象转换为普通对象，避免 IPC 克隆错误
+    const configData = { ...settingsForm.value }
+    const result = await window.electronAPI.saveConfig(configData)
+    if (result.success) {
+      config.value = { ...settingsForm.value }
+      showStatus('设置已保存', 'success')
+      try {
+        await loadCategories()
+      } catch (catError) {
+        console.error('加载分类失败:', catError)
+        // 分类加载失败不影响保存成功
+      }
+    } else {
+      showStatus('保存失败: ' + (result.error || '未知错误'), 'error')
+    }
+  } catch (error) {
+    console.error('保存设置出错:', error)
+    showStatus('保存失败: ' + error.message, 'error')
+  } finally {
+    savingSettings.value = false
   }
-  
-  savingSettings.value = false
 }
 
 // 文件选择

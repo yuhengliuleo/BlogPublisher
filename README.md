@@ -178,6 +178,14 @@ ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ npm run electron:build:m
 
 ## 📝 版本历史
 
+### v1.0.1 (2025-05-23)
+
+**Bug 修复**
+
+- 🐛 修复设置保存时 "An object could not be cloned" 错误
+- 🐛 修复设置保存后按钮一直显示"保存中"的问题
+- ✨ 添加完善的错误处理和提示信息
+
 ### v1.0.0 (2025-05-22)
 
 **首次发布**
