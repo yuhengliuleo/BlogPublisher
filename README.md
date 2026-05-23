@@ -178,6 +178,13 @@ ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ npm run electron:build:m
 
 ## 📝 版本历史
 
+### v1.0.3 (2025-05-23)
+
+**功能改进**
+
+- ✨ 文章编辑保存后自动执行 Hugo 构建并推送到 GitHub
+- ✨ 编辑成功后显示明显的成功提示
+
 ### v1.0.2 (2025-05-23)
 
 **功能改进**

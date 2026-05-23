@@ -1,6 +1,5 @@
 <template>
   <div class="app">
-    <!-- 标签页导航 -->
     <nav class="tabs">
       <button 
         v-for="tab in tabs" 
@@ -608,17 +607,36 @@ async function editArticle(article) {
 async function saveEditedArticle() {
   if (!editingArticle.value) return
   
+  showStatus('正在保存...', 'info')
+  
   const result = await window.electronAPI.updateArticle({
     articlePath: editingArticle.value.path,
     content: editingContent.value
   })
   
-  if (result.success) {
-    showStatus('文章已保存', 'success')
-    editingArticle.value = null
-  } else {
+  if (!result.success) {
     showStatus('保存失败: ' + result.error, 'error')
+    return
   }
+  
+  // Hugo 构建
+  showStatus('正在构建...', 'info')
+  const buildResult = await window.electronAPI.hugoBuild()
+  if (!buildResult.success) {
+    showStatus('构建失败: ' + buildResult.error, 'error')
+    return
+  }
+  
+  // Git 推送
+  showStatus('正在推送到 GitHub...', 'info')
+  const pushResult = await window.electronAPI.gitPush(`更新文章: ${editingArticle.value.title}`)
+  if (!pushResult.success) {
+    showStatus('推送失败: ' + pushResult.error, 'error')
+    return
+  }
+  
+  showStatus('🎉 文章已更新并推送到 GitHub', 'success', 5000)
+  editingArticle.value = null
 }
 
 async function confirmDelete(article) {
