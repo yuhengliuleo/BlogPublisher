@@ -178,6 +178,12 @@ ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ npm run electron:build:m
 
 ## 📝 版本历史
 
+### v1.0.4 (2025-05-23)
+
+**Bug 修复**
+
+- 🐛 修复 "spawn hugo ENOENT" 错误，自动检测 Hugo 安装路径
+
 ### v1.0.3 (2025-05-23)
 
 **功能改进**

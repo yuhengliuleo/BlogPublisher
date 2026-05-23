@@ -338,8 +338,24 @@ ipcMain.handle('hugo-build', async () => {
         fs.rmSync(publicPath, { recursive: true, force: true })
       }
       
+      // 获取 hugo 路径 - 尝试多个常见位置
+      let hugoPath = 'hugo'
+      const possiblePaths = [
+        '/opt/homebrew/bin/hugo',
+        '/usr/local/bin/hugo',
+        '/usr/bin/hugo',
+        'hugo'
+      ]
+      
+      for (const p of possiblePaths) {
+        if (p === 'hugo' || fs.existsSync(p)) {
+          hugoPath = p
+          break
+        }
+      }
+      
       // 执行 hugo 构建
-      const hugo = spawn('hugo', [], { cwd: config.blogPath })
+      const hugo = spawn(hugoPath, [], { cwd: config.blogPath })
       
       let output = ''
       hugo.stdout.on('data', (data) => {
