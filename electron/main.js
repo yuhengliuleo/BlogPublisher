@@ -166,6 +166,23 @@ ipcMain.handle('get-categories', async () => {
   }
 })
 
+// 获取命令的完整路径
+function getCommandPath(cmd) {
+  const possiblePaths = [
+    `/opt/homebrew/bin/${cmd}`,
+    `/usr/local/bin/${cmd}`,
+    `/usr/bin/${cmd}`,
+    cmd
+  ]
+  
+  for (const p of possiblePaths) {
+    if (p === cmd || fs.existsSync(p)) {
+      return p
+    }
+  }
+  return cmd
+}
+
 // 转换 Word 到 Markdown
 ipcMain.handle('convert-word', async (event, filePath) => {
   const config = getConfig()
@@ -190,8 +207,11 @@ ipcMain.handle('convert-word', async (event, filePath) => {
     const fileName = path.basename(filePath, path.extname(filePath))
     const outputMd = path.join(tempDir, `${fileName}.md`)
     
+    // 获取 pandoc 完整路径
+    const pandocPath = getCommandPath('pandoc')
+    
     // 使用 pandoc 转换，提取图片到 media 目录
-    const pandocCmd = `pandoc -f docx -t gfm "${filePath}" -o "${outputMd}" --extract-media="${mediaPath}"`
+    const pandocCmd = `"${pandocPath}" -f docx -t gfm "${filePath}" -o "${outputMd}" --extract-media="${mediaPath}"`
     
     execSync(pandocCmd, { encoding: 'utf-8' })
     

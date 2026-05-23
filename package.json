@@ -1,7 +1,7 @@
 {
   "name": "blogpublisher",
   "private": true,
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "博客文章发布工具 - 一键发布 Word 文档到 Hugo 博客",
   "author": "yuhengliuleo",
   "main": "electron/main.js",

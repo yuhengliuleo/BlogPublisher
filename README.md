@@ -178,6 +178,12 @@ ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ npm run electron:build:m
 
 ## 📝 版本历史
 
+### v1.0.5 (2025-05-23)
+
+**Bug 修复**
+
+- 🐛 修复 Pandoc 命令找不到的问题，自动检测 Pandoc 安装路径
+
 ### v1.0.4 (2025-05-23)
 
 **Bug 修复**
