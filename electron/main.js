@@ -534,10 +534,59 @@ ipcMain.handle('get-article-content', async (event, articlePath) => {
 })
 
 // 更新文章
-ipcMain.handle('update-article', async (event, { articlePath, content }) => {
+ipcMain.handle('update-article', async (event, { articlePath, content, newCategory }) => {
+  const config = getConfig()
+  if (!config.blogPath) {
+    return { success: false, error: '请先在设置中配置博客路径' }
+  }
+  
   try {
-    fs.writeFileSync(articlePath, content, 'utf-8')
-    return { success: true }
+    // 解析原文章路径获取旧分类
+    const pathParts = articlePath.split('/')
+    const categoriesIndex = pathParts.indexOf('分类')
+    const oldCategory = categoriesIndex !== -1 ? pathParts[categoriesIndex + 1] : ''
+    const fileName = path.basename(articlePath)
+    
+    // 如果提供了新分类且与旧分类不同，需要移动文件
+    if (newCategory && oldCategory && newCategory !== oldCategory) {
+      // 确保新分类目录存在
+      const newCategoryPath = path.join(config.blogPath, 'content', '分类', newCategory)
+      if (!fs.existsSync(newCategoryPath)) {
+        fs.mkdirSync(newCategoryPath, { recursive: true })
+        // 创建 _index.md
+        const indexPath = path.join(newCategoryPath, '_index.md')
+        const indexContent = `---
+title: "${newCategory}"
+---
+`
+        fs.writeFileSync(indexPath, indexContent, 'utf-8')
+      }
+      
+      // 更新 content 中的 categories 字段
+      let updatedContent = content
+      const frontMatterMatch = content.match(/^---\n([\s\S]*?)\n---/)
+      if (frontMatterMatch) {
+        const frontMatter = frontMatterMatch[1]
+        const newFrontMatter = frontMatter.replace(
+          /categories:\s*\[[^\]]*\]/,
+          `categories: ["${newCategory}"]`
+        )
+        updatedContent = content.replace(frontMatter, newFrontMatter)
+      }
+      
+      // 写入新位置
+      const newArticlePath = path.join(newCategoryPath, fileName)
+      fs.writeFileSync(newArticlePath, updatedContent, 'utf-8')
+      
+      // 删除旧文件
+      fs.unlinkSync(articlePath)
+      
+      return { success: true, newPath: newArticlePath }
+    } else {
+      // 分类未变化，直接保存
+      fs.writeFileSync(articlePath, content, 'utf-8')
+      return { success: true }
+    }
   } catch (error) {
     return { success: false, error: error.message }
   }

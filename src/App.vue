@@ -250,6 +250,12 @@
     <div v-if="editingArticle" class="modal-overlay" @click.self="editingArticle = null">
       <div class="modal modal-large">
         <h3>编辑文章: {{ editingArticle.title }}</h3>
+        <div class="edit-category-select">
+          <label>分类：</label>
+          <select v-model="editingCategory">
+            <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+          </select>
+        </div>
         <textarea v-model="editingContent" class="markdown-editor"></textarea>
         <div class="modal-actions">
           <button class="btn btn-secondary" @click="editingArticle = null">取消</button>
@@ -322,6 +328,7 @@ const quickCategoryName = ref('')
 const articles = ref([])
 const editingArticle = ref(null)
 const editingContent = ref('')
+const editingCategory = ref('')
 
 // 状态
 const publishing = ref(false)
@@ -601,6 +608,7 @@ async function editArticle(article) {
   if (result.success) {
     editingArticle.value = article
     editingContent.value = result.content
+    editingCategory.value = article.category
   }
 }
 
@@ -611,7 +619,8 @@ async function saveEditedArticle() {
   
   const result = await window.electronAPI.updateArticle({
     articlePath: editingArticle.value.path,
-    content: editingContent.value
+    content: editingContent.value,
+    newCategory: editingCategory.value
   })
   
   if (!result.success) {
@@ -637,6 +646,9 @@ async function saveEditedArticle() {
   
   showStatus('🎉 文章已更新并推送到 GitHub', 'success', 5000)
   editingArticle.value = null
+  
+  // 刷新文章列表
+  await loadArticles()
 }
 
 async function confirmDelete(article) {
@@ -1204,6 +1216,26 @@ body {
   margin-bottom: 15px;
   border: 1px solid #ddd;
   border-radius: 6px;
+}
+
+.edit-category-select {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.edit-category-select label {
+  font-size: 14px;
+  color: #666;
+}
+
+.edit-category-select select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  min-width: 150px;
 }
 
 .modal-actions {

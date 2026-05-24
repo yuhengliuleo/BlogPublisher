@@ -178,6 +178,14 @@ ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ npm run electron:build:m
 
 ## 📝 版本历史
 
+### v1.0.6 (2025-05-24)
+
+**功能改进**
+
+- ✨ 文章编辑界面添加分类选择功能
+- ✨ 修改分类时自动将文章移动到新分类目录
+- ✨ 修改分类时自动更新文章 front matter
+
 ### v1.0.5 (2025-05-23)
 
 **Bug 修复**
