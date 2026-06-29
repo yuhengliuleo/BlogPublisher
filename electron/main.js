@@ -193,7 +193,7 @@ ipcMain.handle('convert-word', async (event, filePath) => {
   try {
     const wordFileName = path.basename(filePath, path.extname(filePath))
     // 使用 Word 文件名作为图片子目录，匹配用户的 media/[文章名]/ 结构
-    const articleMediaDir = path.join(config.blogPath, 'public', 'media', wordFileName)
+    const articleMediaDir = path.join(config.blogPath, 'static', 'media', wordFileName)
     const tempDir = path.join(config.blogPath, '.temp_convert')
     
     // 确保文章的 media 子目录存在
