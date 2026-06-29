@@ -191,12 +191,14 @@ ipcMain.handle('convert-word', async (event, filePath) => {
   }
   
   try {
-    const mediaPath = path.join(config.blogPath, 'static', 'media')
+    const wordFileName = path.basename(filePath, path.extname(filePath))
+    // 使用 Word 文件名作为图片子目录，匹配用户的 media/[文章名]/ 结构
+    const articleMediaDir = path.join(config.blogPath, 'public', 'media', wordFileName)
     const tempDir = path.join(config.blogPath, '.temp_convert')
     
-    // 确保 media 目录存在
-    if (!fs.existsSync(mediaPath)) {
-      fs.mkdirSync(mediaPath, { recursive: true })
+    // 确保文章的 media 子目录存在
+    if (!fs.existsSync(articleMediaDir)) {
+      fs.mkdirSync(articleMediaDir, { recursive: true })
     }
     
     // 创建临时目录
@@ -204,49 +206,59 @@ ipcMain.handle('convert-word', async (event, filePath) => {
       fs.mkdirSync(tempDir, { recursive: true })
     }
     
-    const fileName = path.basename(filePath, path.extname(filePath))
-    const outputMd = path.join(tempDir, `${fileName}.md`)
+    const outputMd = path.join(tempDir, `${wordFileName}.md`)
     
     // 获取 pandoc 完整路径
     const pandocPath = getCommandPath('pandoc')
     
-    // 使用 pandoc 转换，提取图片到 media 目录
-    const pandocCmd = `"${pandocPath}" -f docx -t gfm "${filePath}" -o "${outputMd}" --extract-media="${mediaPath}"`
+    // 使用 pandoc 转换，提取图片到临时目录
+    const pandocCmd = `"${pandocPath}" -f docx -t gfm "${filePath}" -o "${outputMd}" --extract-media="${tempDir}"`
     
     execSync(pandocCmd, { encoding: 'utf-8' })
     
     // 读取转换后的 Markdown
     let markdown = fs.readFileSync(outputMd, 'utf-8')
     
-    // 处理图片路径 - pandoc 提取的图片在 media 子目录中
-    const extractedMediaPath = path.join(mediaPath, 'media')
-    if (fs.existsSync(extractedMediaPath)) {
-      const files = fs.readdirSync(extractedMediaPath)
-      files.forEach(file => {
-        const srcPath = path.join(extractedMediaPath, file)
-        const destPath = path.join(mediaPath, file)
-        if (fs.lstatSync(srcPath).isFile()) {
-          fs.copyFileSync(srcPath, destPath)
+    // pandoc 提取的图片在 tempDir/media/ 子目录中
+    const pandocMediaDir = path.join(tempDir, 'media')
+    if (fs.existsSync(pandocMediaDir)) {
+      // 收集所有提取的图片文件（递归）
+      const moveImages = (srcDir, destDir) => {
+        const entries = fs.readdirSync(srcDir, { withFileTypes: true })
+        for (const entry of entries) {
+          const srcPath = path.join(srcDir, entry.name)
+          const destPath = path.join(destDir, entry.name)
+          if (entry.isDirectory()) {
+            if (!fs.existsSync(destPath)) {
+              fs.mkdirSync(destPath, { recursive: true })
+            }
+            moveImages(srcPath, destPath)
+          } else if (entry.isFile()) {
+            fs.copyFileSync(srcPath, destPath)
+          }
         }
-      })
-      // 删除提取的子目录
-      fs.rmSync(extractedMediaPath, { recursive: true, force: true })
+      }
+      moveImages(pandocMediaDir, articleMediaDir)
     }
     
-    // 更新 Markdown 中的图片路径
-    markdown = markdown.replace(/!\[([^\]]*)\]\([^)]*\/media\/([^)]+)\)/g, '![$1](/media/$2)')
+    // 更新 Markdown 中的图片路径为 /media/[wordFileName]/xxx.jpg 格式
+    // 处理 pandoc 生成的相对路径（如 media/image1.JPG）
     markdown = markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, imgPath) => {
-      if (!imgPath.startsWith('/media/') && !imgPath.startsWith('http')) {
-        const imgName = path.basename(imgPath)
-        return `![${alt}](/media/${imgName})`
+      if (imgPath.startsWith('http') || imgPath.startsWith('/media/')) {
+        return match
       }
-      return match
+      // 提取文件名（去掉 pandoc 的 media/ 前缀）
+      const imgName = path.basename(imgPath)
+      return `![${alt}](/media/${wordFileName}/${imgName})`
     })
+    
+    // 检查是否有图片被提取，用于返回信息
+    const hasImages = fs.existsSync(pandocMediaDir)
     
     // 清理临时文件
     fs.rmSync(tempDir, { recursive: true, force: true })
     
-    return { success: true, markdown }
+    return { success: true, markdown, hasImages, mediaDir: hasImages ? `/media/${wordFileName}` : null }
   } catch (error) {
     return { success: false, error: error.message }
   }
