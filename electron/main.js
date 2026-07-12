@@ -242,12 +242,21 @@ ipcMain.handle('convert-word', async (event, filePath) => {
     }
     
     // 更新 Markdown 中的图片路径为 /media/[wordFileName]/xxx.jpg 格式
-    // 处理 pandoc 生成的相对路径（如 media/image1.JPG）
+    
+    // 1. 处理 pandoc 生成的 HTML <img> 标签（如 <img src="...media/image1.png" style="..."/>）
+    markdown = markdown.replace(/<img\s+[^>]*src="([^"]+)"[^>]*\/?>/gi, (match, imgPath) => {
+      if (imgPath.startsWith('http') || imgPath.startsWith('/media/')) {
+        return match
+      }
+      const imgName = path.basename(imgPath)
+      return `![](/media/${wordFileName}/${imgName})`
+    })
+    
+    // 2. 处理 pandoc 生成的 Markdown 图片格式（如 ![alt](media/image1.JPG)）
     markdown = markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, imgPath) => {
       if (imgPath.startsWith('http') || imgPath.startsWith('/media/')) {
         return match
       }
-      // 提取文件名（去掉 pandoc 的 media/ 前缀）
       const imgName = path.basename(imgPath)
       return `![${alt}](/media/${wordFileName}/${imgName})`
     })
