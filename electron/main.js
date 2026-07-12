@@ -261,6 +261,16 @@ ipcMain.handle('convert-word', async (event, filePath) => {
       return `![${alt}](/media/${wordFileName}/${imgName})`
     })
     
+    // 3. 检测图片后面的注释行（以"图"开头的文本），包装为居中 + 楷体的 HTML
+    // 匹配：图片行 + 换行 + 注释行（以"图"或"Figure"开头）
+    markdown = markdown.replace(/(!\[.*?\]\(\/media\/[^)]+\))\n([^\n]*)/g, (match, imgLine, caption) => {
+      // 只处理以"图"开头的注释行
+      if (/^图\d/.test(caption) || /^图 \d/.test(caption)) {
+        return `${imgLine}\n<center><span class="img-caption">${caption}</span></center>`
+      }
+      return match
+    })
+    
     // 检查是否有图片被提取，用于返回信息
     const hasImages = fs.existsSync(pandocMediaDir)
     
