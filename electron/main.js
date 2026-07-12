@@ -271,6 +271,16 @@ ipcMain.handle('convert-word', async (event, filePath) => {
       return match
     })
     
+    // 4. 检测表格后面的注释行（以"表"开头的文本），包装为居中 + 楷体的 HTML
+    // 匹配：Markdown表格行（|开头）+ 换行 + 注释行（以"表"开头）
+    markdown = markdown.replace(/(\|[^\n]+\|\n(\|[-| :]+\|\n)?\|[-| :]+\|)\n([^\n]*)/g, (match, table, _separator, caption) => {
+      // 只处理以"表"开头的注释行
+      if (/^表\d/.test(caption) || /^表 \d/.test(caption)) {
+        return `${table}\n\n<center><span class="img-caption">${caption}</span></center>`
+      }
+      return match
+    })
+    
     // 检查是否有图片被提取，用于返回信息
     const hasImages = fs.existsSync(pandocMediaDir)
     
