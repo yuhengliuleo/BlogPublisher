@@ -108,7 +108,7 @@ ipcMain.handle('select-folder', async () => {
 ipcMain.handle('select-file', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile'],
-    filters: [{ name: 'Word Documents', extensions: ['docx', 'doc'] }]
+    filters: [{ name: 'Word 文档', extensions: ['docx', 'doc'] }]
   })
   return result
 })
@@ -183,7 +183,7 @@ function getCommandPath(cmd) {
   return cmd
 }
 
-// 转换 Word 到 Markdown
+// 转换 Word 到 HTML
 ipcMain.handle('convert-word', async (event, filePath) => {
   const config = getConfig()
   if (!config.blogPath) {
@@ -206,18 +206,18 @@ ipcMain.handle('convert-word', async (event, filePath) => {
       fs.mkdirSync(tempDir, { recursive: true })
     }
     
-    const outputMd = path.join(tempDir, `${wordFileName}.md`)
+    const outputHtml = path.join(tempDir, `${wordFileName}.html`)
     
     // 获取 pandoc 完整路径
     const pandocPath = getCommandPath('pandoc')
     
-    // 使用 pandoc 转换，提取图片到临时目录
-    const pandocCmd = `"${pandocPath}" -f docx -t gfm "${filePath}" -o "${outputMd}" --extract-media="${tempDir}"`
+    // 使用 pandoc 转换为 HTML，保留格式（颜色、字体、表格样式等）
+    const pandocCmd = `"${pandocPath}" -f docx -t html5 "${filePath}" -o "${outputHtml}" --extract-media="${tempDir}" --wrap=none`
     
     execSync(pandocCmd, { encoding: 'utf-8' })
     
-    // 读取转换后的 Markdown
-    let markdown = fs.readFileSync(outputMd, 'utf-8')
+    // 读取转换后的 HTML
+    let htmlContent = fs.readFileSync(outputHtml, 'utf-8')
     
     // pandoc 提取的图片在 tempDir/media/ 子目录中
     const pandocMediaDir = path.join(tempDir, 'media')
@@ -241,44 +241,14 @@ ipcMain.handle('convert-word', async (event, filePath) => {
       moveImages(pandocMediaDir, articleMediaDir)
     }
     
-    // 更新 Markdown 中的图片路径为 /media/[wordFileName]/xxx.jpg 格式
-    
-    // 1. 处理 pandoc 生成的 HTML <img> 标签（如 <img src="...media/image1.png" style="..."/>）
-    markdown = markdown.replace(/<img\s+[^>]*src="([^"]+)"[^>]*\/?>/gi, (match, imgPath) => {
+    // 更新 HTML 中的图片路径为 /media/[wordFileName]/xxx.jpg 格式
+    htmlContent = htmlContent.replace(/<img\s+[^>]*src="([^"]+)"[^>]*\/?>/gi, (match, imgPath) => {
       if (imgPath.startsWith('http') || imgPath.startsWith('/media/')) {
         return match
       }
       const imgName = path.basename(imgPath)
-      return `![](/media/${wordFileName}/${imgName})`
-    })
-    
-    // 2. 处理 pandoc 生成的 Markdown 图片格式（如 ![alt](media/image1.JPG)）
-    markdown = markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, imgPath) => {
-      if (imgPath.startsWith('http') || imgPath.startsWith('/media/')) {
-        return match
-      }
-      const imgName = path.basename(imgPath)
-      return `![${alt}](/media/${wordFileName}/${imgName})`
-    })
-    
-    // 3. 检测图片后面的注释行（以"图"开头的文本），包装为居中 + 楷体的 HTML
-    // 匹配：图片行 + 换行 + 注释行（以"图"或"Figure"开头）
-    markdown = markdown.replace(/(!\[.*?\]\(\/media\/[^)]+\))\n([^\n]*)/g, (match, imgLine, caption) => {
-      // 只处理以"图"开头的注释行
-      if (/^图\d/.test(caption) || /^图 \d/.test(caption)) {
-        return `${imgLine}\n<center><span class="img-caption">${caption}</span></center>`
-      }
-      return match
-    })
-    
-    // 4. 检测表格后面的注释行（以"表"开头的文本），包装为居中 + 楷体的 HTML
-    // 匹配：Markdown表格行（|开头）+ 换行 + 注释行（以"表"开头）
-    markdown = markdown.replace(/(\|[^\n]+\|\n(\|[-| :]+\|\n)?\|[-| :]+\|)\n([^\n]*)/g, (match, table, _separator, caption) => {
-      // 只处理以"表"开头的注释行
-      if (/^表\d/.test(caption) || /^表 \d/.test(caption)) {
-        return `${table}\n\n<center><span class="img-caption">${caption}</span></center>`
-      }
-      return match
+      // 保留 img 原有的 style/width/height 属性，只替换 src
+      return match.replace(imgPath, `/media/${wordFileName}/${imgName}`)
     })
     
     // 检查是否有图片被提取，用于返回信息
@@ -287,7 +257,7 @@ ipcMain.handle('convert-word', async (event, filePath) => {
     // 清理临时文件
     fs.rmSync(tempDir, { recursive: true, force: true })
     
-    return { success: true, markdown, hasImages, mediaDir: hasImages ? `/media/${wordFileName}` : null }
+    return { success: true, markdown: htmlContent, hasImages, mediaDir: hasImages ? `/media/${wordFileName}` : null }
   } catch (error) {
     return { success: false, error: error.message }
   }
@@ -313,13 +283,13 @@ ipcMain.handle('save-article', async (event, { title, date, category, markdown, 
 title: "${title}"
 date: "${date}"
 draft: false
-categories: ["${category}"]${showToc ? '\ntableOfContents: true' : ''}
+categories: [${category}]${showToc ? '\ntableOfContents: true' : ''}
 ---
 `
-    const fullContent = frontMatter + markdown
+    const fullContent = frontMatter + htmlContent
     
-    // 保存文章
-    const articlePath = path.join(categoryPath, `${fileName}.md`)
+    // 保存文章（HTML 格式，保留 Word 原始排版）
+    const articlePath = path.join(categoryPath, `${fileName}.html`)
     fs.writeFileSync(articlePath, fullContent, 'utf-8')
     
     return { success: true, path: articlePath }
@@ -531,7 +501,7 @@ ipcMain.handle('get-articles', async () => {
     for (const category of categories) {
       const categoryPath = path.join(categoriesPath, category)
       const files = fs.readdirSync(categoryPath)
-        .filter(file => file.endsWith('.md') && file !== '_index.md')
+        .filter(file => (file.endsWith('.html') || file.endsWith('.md')) && file !== '_index.md')
       
       for (const file of files) {
         const filePath = path.join(categoryPath, file)
@@ -610,7 +580,7 @@ title: "${newCategory}"
         const frontMatter = frontMatterMatch[1]
         const newFrontMatter = frontMatter.replace(
           /categories:\s*\[[^\]]*\]/,
-          `categories: ["${newCategory}"]`
+          `categories: [${newCategory}]`
         )
         updatedContent = content.replace(frontMatter, newFrontMatter)
       }

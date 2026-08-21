@@ -83,17 +83,20 @@
           </div>
         </div>
 
-        <!-- 右侧：Markdown 预览 -->
+        <!-- 右侧：HTML 预览 -->
         <div class="right-panel">
           <div class="preview-header">
-            <span>Markdown 预览</span>
-            <button v-if="markdown" class="btn-small" @click="copyMarkdown">复制</button>
+            <span>转换预览</span>
+            <button v-if="markdown" class="btn-small" @click="copyMarkdown">复制源码</button>
           </div>
-          <textarea 
-            v-model="markdown" 
-            class="markdown-editor"
-            placeholder="转换后的 Markdown 内容将显示在这里..."
-          ></textarea>
+          <div 
+            v-if="markdown" 
+            class="html-preview"
+            v-html="markdown"
+          ></div>
+          <div v-else class="html-preview html-preview-empty">
+            转换后的内容将显示在这里...
+          </div>
         </div>
       </div>
 
@@ -967,6 +970,41 @@ body {
   line-height: 1.6;
   resize: none;
   outline: none;
+}
+
+.html-preview {
+  flex: 1;
+  width: 100%;
+  padding: 20px;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #333;
+}
+.html-preview table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+}
+.html-preview th, .html-preview td {
+  border: 1px solid #ddd;
+  padding: 8px 12px;
+  text-align: left;
+}
+.html-preview th {
+  background: #f5f5f5;
+  font-weight: 600;
+}
+.html-preview img {
+  max-width: 100%;
+  height: auto;
+  margin: 8px 0;
+}
+.html-preview-empty {
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* 操作按钮 */
