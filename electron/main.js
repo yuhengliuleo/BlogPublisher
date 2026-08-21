@@ -286,7 +286,7 @@ draft: false
 categories: [${category}]${showToc ? '\ntableOfContents: true' : ''}
 ---
 `
-    const fullContent = frontMatter + htmlContent
+    const fullContent = frontMatter + markdown
     
     // 保存文章（HTML 格式，保留 Word 原始排版）
     const articlePath = path.join(categoryPath, `${fileName}.html`)
