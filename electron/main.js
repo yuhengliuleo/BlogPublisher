@@ -265,15 +265,10 @@ ipcMain.handle('convert-word', async (event, filePath) => {
 
 // 保存文章
 
-// 修正弯引号为直引号，避免 Hugo YAML 解析失败
+// 保留原始标题内容，用 YAML 单引号包裹避免解析问题
 function sanitizeTitle(title) {
-  return title
-    .replace(/\u201c/g, '"')   // 左弯引号 → 直引号
-    .replace(/\u201d/g, '"')   // 右弯引号 → 直引号
-    .replace(/\u2018/g, "'")  // 左弯单引号 → 直单引号
-    .replace(/\u2019/g, "'")  // 右弯单引号 → 直单引号
-    .replace(/\u300a/g, '《')   // 保留中文书名号
-    .replace(/\u300b/g, '》');
+  // 单引号在 YAML 中是字面量，只需转义其中的单引号（用两个单引号表示）
+  return title.replace(/'/g, "''");
 }
 
 ipcMain.handle('save-article', async (event, { title, date, category, markdown, showToc, fileName }) => {
@@ -292,7 +287,7 @@ ipcMain.handle('save-article', async (event, { title, date, category, markdown, 
     
     // 构建文章内容
     const frontMatter = `---
-title: "${sanitizeTitle(title)}"
+title: '${sanitizeTitle(title)}'
 date: "${date}"
 draft: false
 categories: [${category}]${showToc ? '\ntableOfContents: true' : ''}
