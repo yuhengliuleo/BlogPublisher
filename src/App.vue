@@ -83,17 +83,18 @@
           </div>
         </div>
 
-        <!-- 右侧：HTML 预览 -->
+        <!-- 右侧：HTML 编辑/预览 -->
         <div class="right-panel">
           <div class="preview-header">
-            <span>转换预览</span>
+            <span>HTML 内容（可编辑）</span>
             <button v-if="markdown" class="btn-small" @click="copyMarkdown">复制源码</button>
           </div>
-          <div 
-            v-if="markdown" 
-            class="html-preview"
-            v-html="markdown"
-          ></div>
+          <textarea 
+            v-if="markdown"
+            v-model="markdown" 
+            class="markdown-editor"
+            placeholder="转换后的 HTML 内容..."
+          ></textarea>
           <div v-else class="html-preview html-preview-empty">
             转换后的内容将显示在这里...
           </div>
