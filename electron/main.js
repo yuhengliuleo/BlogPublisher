@@ -264,6 +264,18 @@ ipcMain.handle('convert-word', async (event, filePath) => {
 })
 
 // 保存文章
+
+// 修正弯引号为直引号，避免 Hugo YAML 解析失败
+function sanitizeTitle(title) {
+  return title
+    .replace(/\u201c/g, '"')   // 左弯引号 → 直引号
+    .replace(/\u201d/g, '"')   // 右弯引号 → 直引号
+    .replace(/\u2018/g, "'")  // 左弯单引号 → 直单引号
+    .replace(/\u2019/g, "'")  // 右弯单引号 → 直单引号
+    .replace(/\u300a/g, '《')   // 保留中文书名号
+    .replace(/\u300b/g, '》');
+}
+
 ipcMain.handle('save-article', async (event, { title, date, category, markdown, showToc, fileName }) => {
   const config = getConfig()
   if (!config.blogPath) {
