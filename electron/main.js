@@ -292,7 +292,7 @@ ipcMain.handle('save-article', async (event, { title, date, category, markdown, 
     
     // 构建文章内容
     const frontMatter = `---
-title: "${title}"
+title: "${sanitizeTitle(title)}"
 date: "${date}"
 draft: false
 categories: [${category}]${showToc ? '\ntableOfContents: true' : ''}
@@ -328,7 +328,7 @@ ipcMain.handle('create-category', async (event, categoryName) => {
     // 创建 _index.md
     const indexPath = path.join(categoryPath, '_index.md')
     const indexContent = `---
-title: "${categoryName}"
+title: "${sanitizeTitle(categoryName)}"
 ---
 `
     fs.writeFileSync(indexPath, indexContent, 'utf-8')
